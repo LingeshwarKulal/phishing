@@ -51,14 +51,26 @@ const SecurityFeature = ({ title, status, description }) => {
 export default function AnalysisDashboard({ result }) {
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Add null checks and default values
+  const details = result?.details || {};
+  const riskScore = result?.risk_score || 0;
+  const recommendations = result?.recommendations || [];
+  const usesHttps = details?.uses_https || false;
+  const domainAge = details?.domain_age_days || 0;
+  const containsIp = details?.contains_ip || false;
+  const suspiciousTld = details?.suspicious_tld || false;
+  const containsAtSymbol = details?.contains_at_symbol || false;
+  const subdomainCount = details?.subdomain_count || 0;
+  const domainLength = details?.domain_length || 0;
+
   const exportReport = () => {
     const report = {
-      url: result.details.original_url,
-      analysis_time: result.details.analysis_time,
-      status: result.status,
-      risk_score: result.risk_score,
-      details: result.details,
-      recommendations: result.recommendations
+      url: details?.original_url || '',
+      analysis_time: details?.analysis_time || new Date().toISOString(),
+      status: result?.status || 'unknown',
+      risk_score: riskScore,
+      details: details,
+      recommendations: recommendations
     };
 
     const blob = new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' });
@@ -71,6 +83,8 @@ export default function AnalysisDashboard({ result }) {
     window.URL.revokeObjectURL(url);
     document.body.removeChild(a);
   };
+
+  if (!result) return null;
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 p-6 rounded-xl border border-gray-200 dark:border-gray-700">
@@ -88,21 +102,21 @@ export default function AnalysisDashboard({ result }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <SecurityIndicator
           title="Risk Score"
-          value={`${result.risk_score}%`}
+          value={`${Math.round((1 - riskScore) * 100)}%`}
           description="Overall security assessment"
-          type={result.risk_score <= 20 ? 'good' : result.risk_score <= 50 ? 'warning' : 'danger'}
+          type={riskScore <= 0.2 ? 'good' : riskScore <= 0.5 ? 'warning' : 'danger'}
         />
         <SecurityIndicator
           title="Security Features"
-          value={result.details.uses_https ? 'HTTPS Enabled' : 'HTTPS Missing'}
+          value={usesHttps ? 'HTTPS Enabled' : 'HTTPS Missing'}
           description="Connection security status"
-          type={result.details.uses_https ? 'good' : 'danger'}
+          type={usesHttps ? 'good' : 'danger'}
         />
         <SecurityIndicator
           title="Domain Age"
-          value={result.details.domain_age_days ? `${result.details.domain_age_days} days` : 'Unknown'}
+          value={`${domainAge} days`}
           description="Time since domain registration"
-          type={result.details.domain_age_days > 365 ? 'good' : result.details.domain_age_days > 30 ? 'warning' : 'danger'}
+          type={domainAge > 365 ? 'good' : domainAge > 30 ? 'warning' : 'danger'}
         />
       </div>
 
@@ -144,16 +158,16 @@ export default function AnalysisDashboard({ result }) {
           <div className="grid gap-4">
             <SecurityFeature
               title="Connection Security"
-              status={result.details.uses_https ? 'good' : 'danger'}
-              description={result.details.uses_https ? 'Secure HTTPS connection available' : 'No secure HTTPS connection'}
+              status={usesHttps ? 'good' : 'danger'}
+              description={usesHttps ? 'Secure HTTPS connection available' : 'No secure HTTPS connection'}
             />
             <SecurityFeature
               title="Domain Structure"
-              status={result.details.contains_ip ? 'danger' : result.details.suspicious_tld ? 'warning' : 'good'}
+              status={containsIp ? 'danger' : suspiciousTld ? 'warning' : 'good'}
               description={
-                result.details.contains_ip
+                containsIp
                   ? 'IP address used instead of domain name'
-                  : result.details.suspicious_tld
+                  : suspiciousTld
                   ? 'Suspicious top-level domain detected'
                   : 'Normal domain structure'
               }
@@ -161,16 +175,16 @@ export default function AnalysisDashboard({ result }) {
             <SecurityFeature
               title="URL Characteristics"
               status={
-                result.details.contains_at_symbol || result.details.subdomain_count > 3
+                containsAtSymbol || subdomainCount > 3
                   ? 'danger'
-                  : result.details.domain_length > 50
+                  : domainLength > 50
                   ? 'warning'
                   : 'good'
               }
               description={
-                result.details.contains_at_symbol
+                containsAtSymbol
                   ? 'Contains potentially deceptive characters'
-                  : result.details.subdomain_count > 3
+                  : subdomainCount > 3
                   ? 'Excessive number of subdomains'
                   : 'Normal URL structure'
               }
@@ -181,14 +195,14 @@ export default function AnalysisDashboard({ result }) {
         {activeTab === 'details' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
             <pre className="whitespace-pre-wrap text-sm font-mono text-gray-700 dark:text-gray-300">
-              {JSON.stringify(result.details, null, 2)}
+              {JSON.stringify(details, null, 2)}
             </pre>
           </div>
         )}
 
         {activeTab === 'recommendations' && (
           <div className="space-y-4">
-            {result.recommendations.map((rec, index) => (
+            {recommendations.map((rec, index) => (
               <div
                 key={index}
                 className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700"
