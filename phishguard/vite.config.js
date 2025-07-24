@@ -8,4 +8,18 @@ export default defineConfig({
     port: 5173,
     host: true,
   },
+  base: './',
+  build: {
+    outDir: 'dist',
+    assetsDir: 'assets',
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          ui: ['@headlessui/react', '@heroicons/react'],
+        },
+      },
+    },
+  },
 })
