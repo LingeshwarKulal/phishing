@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "buildCommand": "cd phishguard && npm install && npm run build",
+  "outputDirectory": "phishguard/dist",
+  "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+} 
